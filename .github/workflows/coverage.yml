@@ -1,0 +1,65 @@
+name: coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  coverage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      # rust-toolchain.toml pins the version and llvm-tools-preview; with no
+      # arguments rustup installs exactly what that file asks for.
+      - name: Install toolchain
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
+
+      - name: Collect coverage (local + Docker)
+        run: scripts/coverage.sh collect
+
+      - name: Summary
+        run: |
+          {
+            echo '## Coverage'
+            echo
+            echo '```'
+            scripts/coverage.sh report
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          scripts/coverage.sh report
+
+      - name: Reports
+        run: |
+          scripts/coverage.sh report --lcov --output-path lcov.info
+          scripts/coverage.sh report --html --output-dir coverage
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: lcov.info
+          # Public repos can upload without a token once tokenless upload is
+          # enabled in the Codecov org settings; otherwise add CODECOV_TOKEN.
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-html
+          path: coverage/html

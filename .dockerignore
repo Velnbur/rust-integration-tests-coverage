@@ -1,0 +1,6 @@
+target
+.git
+.github
+# The image already pins the toolchain; this file would make rustup download
+# llvm-tools inside the build.
+rust-toolchain.toml

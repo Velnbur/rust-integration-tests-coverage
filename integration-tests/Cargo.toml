@@ -1,0 +1,10 @@
+[package]
+name = "integration-tests"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+calc = { path = "../crates/calc" }
+text = { path = "../crates/text" }
+ureq = { version = "3", default-features = false }
